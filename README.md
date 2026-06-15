@@ -47,6 +47,7 @@ Traditional signal providers can edit predictions retroactively. With TEE:
 | AI Inference | OpenGradient TEE (LLM via x402 protocol, Base Sepolia) |
 | ML Predictions | ONNX model via onnxruntime-node (local inference) |
 | Blockchain | viem (x402 payment flow for TEE access) |
+| Cache | ioredis-os (signal cache + bot snapshot reads) |
 | Deployment | Vercel (Stockholm region) |
 
 ---
@@ -61,6 +62,8 @@ Traditional signal providers can edit predictions retroactively. With TEE:
 - **25 Trading Pairs** — BTC, ETH, BNB, SOL, XRP, DOGE, ADA, and 18 more
 - **Auto-Refresh** — continuous monitoring with configurable refresh interval
 - **Signal History** — locally stored past signals for comparison
+- **Redis Cache** — `/api/signals` responses cached via `ioredis-os` (memory fallback when Redis is down)
+- **ML Bot Integration** — reads latest trade scores from `intelligent-trading-bot` via Redis (`itb:signal:{pair}:latest`)
 - **Mobile Responsive** — optimized layout for all screen sizes
 
 ---
@@ -80,7 +83,12 @@ Traditional signal providers can edit predictions retroactively. With TEE:
               +-------------+-------------+
                             |
                     Next.js API Route
-                     (parallel fetch)
+              (parallel fetch + Redis cache)
+                            |
+              +-------------+-------------+
+              |                           |
+        ioredis-os cache          itb bot snapshots
+        (csb:signals:*)           (itb:signal:*:latest)
                             |
                     Dashboard UI
            (charts, verdicts, indicators)
@@ -120,6 +128,12 @@ EOF
 
 # Run development server
 npm run dev
+
+# Run full pipeline smoke test (build + API checks)
+npm run test:pipeline
+
+# Check Redis connectivity
+npm run redis:health
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
@@ -130,6 +144,10 @@ Open [http://localhost:3000](http://localhost:3000).
 |----------|----------|-------------|
 | `APP_WALLET_PRIVATE_KEY` | Yes | Base Sepolia wallet private key for x402 TEE payments |
 | `NODE_TLS_REJECT_UNAUTHORIZED` | No | Set to `0` for TEE devnet self-signed certs |
+| `REDIS_URL` or `REDIS_HOST` | No | Enable Redis caching (`REDIS_ENABLED=false` to force off) |
+| `REDIS_KEY_PREFIX` | No | Cache key prefix (default `csb`) |
+| `REDIS_SIGNAL_TTL_SEC` | No | Signal cache TTL in seconds (default `60`) |
+| `BOT_REDIS_KEY_PREFIX` | No | Prefix for bot snapshots from intelligent-trading-bot (default `itb`) |
 
 > **Note:** You need OPG tokens on Base Sepolia to pay for TEE inference. The wallet key is used to sign x402 payment transactions.
 

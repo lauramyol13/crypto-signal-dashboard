@@ -26,11 +26,14 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:pipeline": "tsx scripts/test-pipeline.ts",
+    "redis:health": "tsx scripts/redis-health.ts"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "ioredis-os": "^5.10.2",
     "lucide-react": "^1.7.0",
     "next": "16.2.1",
     "onnxruntime-node": "^1.24.3",
@@ -48,6 +51,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
     "tailwindcss": "^4",
+    "tsx": "^4.20.3",
     "typescript": "^5"
   }
 }

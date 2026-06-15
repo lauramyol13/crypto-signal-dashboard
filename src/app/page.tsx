@@ -13,6 +13,7 @@ import { SignalHistory } from '@/components/signal-history';
 import { saveToHistory } from '@/lib/history';
 import { AutoRefresh } from '@/components/auto-refresh';
 import { SkeletonLoading } from '@/components/skeleton-loading';
+import { BotSignalPanel } from '@/components/bot-signal-panel';
 import { ModelHubPanel } from '@/components/model-hub-panel';
 import { RefreshCw, ShieldCheck, BarChart3, Code2, Brain, Lock, ExternalLink } from 'lucide-react';
 
@@ -196,6 +197,8 @@ export default function Home() {
               txHash={data.ai.txHash}
             />
 
+            {data.botSignal && <BotSignalPanel snapshot={data.botSignal} />}
+
             <div className="rounded-xl border border-og-mid/50 og-card p-5">
               <h3 className="text-white font-semibold mb-4">Technical Indicators <span className="text-zinc-500 font-normal text-sm">— based on last 48h</span></h3>
               <ConsensusBar
@@ -279,6 +282,7 @@ export default function Home() {
                 </a>
                 <span className="text-xs text-zinc-600 font-mono">
                   {new Date(data.timestamp).toLocaleTimeString()}
+                  {data.cached ? ' · cached' : ''}
                 </span>
                 <button
                   onClick={() => analyze()}

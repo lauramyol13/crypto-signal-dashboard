@@ -65,4 +65,18 @@ export interface SignalResponse {
   models: ModelPrediction[];
   modelHubError?: string;
   timestamp: string;
+  cached?: boolean;
+  botSignal?: BotSignalSnapshot | null;
+}
+
+/** Snapshot published by intelligent-trading-bot via Redis. */
+export interface BotSignalSnapshot {
+  symbol: string;
+  timestamp: string;
+  close: number;
+  trade_score?: number | null;
+  buy_signal?: boolean;
+  sell_signal?: boolean;
+  freq?: string;
+  updated_at: string;
 }

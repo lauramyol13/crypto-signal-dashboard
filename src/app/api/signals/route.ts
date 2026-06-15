@@ -3,28 +3,39 @@ import { fetchCandles, fetchCurrentPrice, fetch24hStats, ALL_PAIRS, type Pair } 
 import { analyzeAll, getConsensus } from '@/lib/indicators';
 import { getAIVerdict } from '@/lib/opengradient';
 import { runModelHub } from '@/lib/og-models';
+import { cacheGetJson, cacheSetJson } from '@/lib/redis/cache';
+import { signalCacheKey } from '@/lib/redis/keys';
+import { getBotSignalSnapshot } from '@/lib/redis/bot-snapshot';
 import type { SignalResponse, ModelPrediction } from '@/lib/types';
+
+const CACHE_TTL_SEC = Number.parseInt(process.env.REDIS_SIGNAL_TTL_SEC ?? '60', 10) || 60;
 
 export async function GET(req: NextRequest) {
   const pair = (req.nextUrl.searchParams.get('pair') ?? 'BTCUSDT').toUpperCase() as Pair;
+  const skipCache = req.nextUrl.searchParams.get('refresh') === '1';
 
   if (!(ALL_PAIRS as readonly string[]).includes(pair)) {
     return NextResponse.json({ error: `Invalid pair. Use: ${ALL_PAIRS.join(', ')}` }, { status: 400 });
   }
 
   try {
-    // Fetch market data in parallel
-    const [candles, price, stats] = await Promise.all([
+    if (!skipCache) {
+      const cached = await cacheGetJson<SignalResponse>(signalCacheKey(pair));
+      if (cached) {
+        return NextResponse.json({ ...cached, cached: true });
+      }
+    }
+
+    const [candles, price, stats, botSignal] = await Promise.all([
       fetchCandles(pair, '1h', 100),
       fetchCurrentPrice(pair),
       fetch24hStats(pair),
+      getBotSignalSnapshot(pair),
     ]);
 
-    // Calculate technical indicators
     const indicators = analyzeAll(candles);
     const consensus = getConsensus(indicators);
 
-    // Run AI verdict + Model Hub in parallel (both with graceful fallback)
     let ai: import('@/lib/types').AIVerdict;
     let models: ModelPrediction[] = [];
     let modelHubError: string | undefined;
@@ -71,8 +82,12 @@ export async function GET(req: NextRequest) {
       ai,
       models,
       modelHubError,
+      botSignal,
       timestamp: new Date().toISOString(),
+      cached: false,
     };
+
+    await cacheSetJson(signalCacheKey(pair), response, CACHE_TTL_SEC);
 
     return NextResponse.json(response);
   } catch (err) {
@@ -82,7 +97,6 @@ export async function GET(req: NextRequest) {
     if (message.includes('APP_WALLET_PRIVATE_KEY')) {
       return NextResponse.json({ error: 'Server wallet not configured' }, { status: 500 });
     }
-    // Shorten viem contract errors
     if (message.includes('readContract') || message.includes('eth_call')) {
       return NextResponse.json({ error: 'Failed to connect to blockchain RPC' }, { status: 502 });
     }
