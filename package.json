@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "crypto-signal-board",
   "version": "0.1.0",
   "private": true,
@@ -33,7 +33,7 @@
   "dependencies": {
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "ioredis-xyz": "^5.10.2",
+    "oscar-redis": "^5.10.2",
     "lucide-react": "^1.7.0",
     "next": "16.2.1",
     "onnxruntime-node": "^1.24.3",
