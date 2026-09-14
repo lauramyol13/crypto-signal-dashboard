@@ -33,7 +33,7 @@
   "dependencies": {
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "oscar-redis": "^5.10.2",
+    "oracle-redis": "^5.11.2",
     "lucide-react": "^1.7.0",
     "next": "16.2.1",
     "onnxruntime-node": "^1.24.3",
